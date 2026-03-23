@@ -76,3 +76,41 @@ npm install @encorekit/capacitor@<version>
 ```
 
 Check https://www.npmjs.com/package/@encorekit/capacitor
+
+## Testing the Published Package
+
+### Dry run (before publishing)
+
+Build a tarball of exactly what npm would publish, without actually publishing:
+
+```bash
+npm pack
+```
+
+Then point the example app at the tarball instead of the local source:
+
+```json
+// example/package.json — change:
+"@encorekit/capacitor": "file:.."
+
+// to:
+"@encorekit/capacitor": "file:../encorekit-capacitor-0.1.0.tgz"
+```
+
+Run `make clean && make demo-ios` to test the full consumer experience.
+
+### After publishing
+
+Swap the example app to the real npm package:
+
+```json
+// example/package.json — change:
+"@encorekit/capacitor": "file:.."
+
+// to:
+"@encorekit/capacitor": "0.1.0"
+```
+
+Run `make clean && make demo-ios` — this pulls from npm, exactly like a consumer.
+
+**Remember** to revert `example/package.json` back to `"file:.."` after testing.

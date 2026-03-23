@@ -15,6 +15,13 @@ help:
 	@echo ""
 	@echo "Usage: make <target>"
 	@echo ""
+	@echo "Development:"
+	@echo "  test                       Run Jest tests"
+	@echo "  lint                       Run ESLint"
+	@echo "  typecheck                  Run TypeScript typecheck"
+	@echo "  build                      Build plugin (TS + rollup)"
+	@echo "  clean                      Remove ALL build artifacts (simulate fresh checkout)"
+	@echo ""
 	@echo "Example App:"
 	@echo "  setup-example              Install deps + cap sync for example app"
 	@echo "  demo-ios                   Build and open example app for iOS"
@@ -26,6 +33,32 @@ help:
 	@echo "Release:"
 	@echo "  release                    Run interactive release workflow"
 	@echo ""
+
+# =============================================================================
+# Development
+# =============================================================================
+
+.PHONY: test
+test:
+	@npm test
+
+.PHONY: lint
+lint:
+	@npm run lint
+
+.PHONY: typecheck
+typecheck:
+	@npm run typecheck
+
+.PHONY: build
+build:
+	@npm run build
+
+.PHONY: clean
+clean:
+	@rm -rf node_modules dist package-lock.json
+	@rm -rf example/node_modules example/dist example/ios example/android example/package-lock.json
+	@echo "Cleaned. Run 'make demo-ios' to rebuild from scratch."
 
 # =============================================================================
 # Release

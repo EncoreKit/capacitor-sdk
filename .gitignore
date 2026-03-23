@@ -22,9 +22,13 @@ Thumbs.db
 .env.*
 *.local
 
+# Swift Package Manager
+.swiftpm/
+
 # Plugin Android build
 /android/.gradle
 /android/build
+/android/local.properties
 
 # Example app — iOS
 example/ios/App/Pods/
