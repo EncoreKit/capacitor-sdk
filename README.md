@@ -9,6 +9,8 @@ npm install @encorekit/capacitor
 npx cap sync
 ```
 
+Both SPM (default) and CocoaPods are supported for iOS. No additional configuration needed.
+
 ## Usage
 
 ```typescript
