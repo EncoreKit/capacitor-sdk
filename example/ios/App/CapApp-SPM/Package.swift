@@ -12,7 +12,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "6.2.1"),
-        .package(name: "EncorekitCapacitor", path: "../../../..")
+        .package(name: "EncorekitCapacitor", path: "../../../node_modules/@encorekit/capacitor")
     ],
     targets: [
         .target(

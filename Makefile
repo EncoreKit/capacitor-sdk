@@ -20,15 +20,14 @@ help:
 	@echo "  lint                       Run ESLint"
 	@echo "  typecheck                  Run TypeScript typecheck"
 	@echo "  build                      Build plugin (TS + rollup)"
-	@echo "  clean                      Remove ALL build artifacts (simulate fresh checkout)"
+	@echo "  clean                      Remove build artifacts (simulate fresh checkout)"
+	@echo "  nuke                       Clean + nuke Xcode DerivedData and SPM caches"
 	@echo ""
 	@echo "Example App:"
 	@echo "  setup-example              Install deps + cap sync for example app"
-	@echo "  demo-ios                   Build and open example app for iOS"
-	@echo "  demo-android               Build and open example app for Android"
+	@echo "  demo-ios                   Build example app for iOS"
+	@echo "  demo-android               Build example app for Android"
 	@echo "  demo-all                   Build for both iOS and Android"
-	@echo "  clean-example              Remove build artifacts"
-	@echo "  nuke                       Full clean: DerivedData + Pods + node_modules"
 	@echo ""
 	@echo "Release:"
 	@echo "  release                    Run interactive release workflow"
@@ -56,9 +55,11 @@ build:
 
 .PHONY: clean
 clean:
-	@rm -rf node_modules dist package-lock.json
-	@rm -rf example/node_modules example/dist example/ios example/android example/package-lock.json
-	@echo "Cleaned. Run 'make demo-ios' to rebuild from scratch."
+	@bash scripts/demo/clean-example.sh
+
+.PHONY: nuke
+nuke:
+	@bash scripts/demo/clean-example.sh --nuke
 
 # =============================================================================
 # Release
@@ -87,10 +88,3 @@ demo-android:
 .PHONY: demo-all
 demo-all: demo-ios demo-android
 
-.PHONY: clean-example
-clean-example:
-	@bash scripts/demo/clean-example.sh
-
-.PHONY: nuke
-nuke:
-	@bash scripts/demo/clean-example.sh --nuke
