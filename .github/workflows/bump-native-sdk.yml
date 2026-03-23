@@ -1,0 +1,95 @@
+name: Bump Native SDK Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      sdk:
+        description: 'Which native SDK to bump'
+        required: true
+        type: choice
+        options:
+          - ios
+          - android
+          - both
+      version:
+        description: 'New version (e.g. 1.5.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump:
+    name: Bump ${{ inputs.sdk }} SDK to ${{ inputs.version }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Compute branch name
+        id: branch
+        run: echo "name=chore/bump-${{ inputs.sdk }}-sdk-${{ inputs.version }}" >> $GITHUB_OUTPUT
+
+      - name: Create branch
+        run: git checkout -b "${{ steps.branch.outputs.name }}"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Bump iOS version in package.json
+        if: inputs.sdk == 'ios' || inputs.sdk == 'both'
+        run: |
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.sdkVersions.ios.EncoreKit = '${{ inputs.version }}';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+          echo "Updated sdkVersions.ios.EncoreKit to ${{ inputs.version }}"
+
+      - name: Bump Android version in package.json
+        if: inputs.sdk == 'android' || inputs.sdk == 'both'
+        run: |
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.sdkVersions.android['com.encorekit:encore'] = '${{ inputs.version }}';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+          echo "Updated sdkVersions.android to ${{ inputs.version }}"
+
+      - name: Commit changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add -A
+          git commit -m "chore: bump ${{ inputs.sdk }} native SDK to ${{ inputs.version }}"
+
+      - name: Push branch
+        run: git push origin "${{ steps.branch.outputs.name }}"
+
+      - name: Create pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --title "chore: bump ${{ inputs.sdk }} native SDK to ${{ inputs.version }}" \
+            --body "Automated bump of native SDK version pin(s) to ${{ inputs.version }}.
+
+          ## Changes
+          - \`package.json\`: sdkVersions.${{ inputs.sdk }} → ${{ inputs.version }}
+          $( [ "${{ inputs.sdk }}" != "android" ] && echo "- Podspec will resolve to EncoreKit ${{ inputs.version }}" || true )
+          $( [ "${{ inputs.sdk }}" != "ios" ] && echo "- Gradle will resolve to com.encorekit:encore:${{ inputs.version }}" || true )
+
+          ## Testing
+          - [ ] \`make demo-ios\` passes
+          - [ ] \`make demo-android\` passes" \
+            --base main \
+            --head "${{ steps.branch.outputs.name }}"

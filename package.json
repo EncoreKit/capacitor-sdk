@@ -1,0 +1,95 @@
+{
+  "name": "@encorekit/capacitor",
+  "version": "0.0.1",
+  "sdkVersions": {
+    "ios": {
+      "EncoreKit": "1.4.39"
+    },
+    "android": {
+      "com.encorekit:encore": "1.4.38"
+    }
+  },
+  "description": "Encore Capacitor bridge — thin native plugin layer delegating to encore-swift-sdk (iOS) and encore-android-sdk (Android)",
+  "main": "dist/plugin.cjs.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/esm/index.d.ts",
+  "unpkg": "dist/plugin.js",
+  "files": [
+    "dist/",
+    "ios/",
+    "android/",
+    "*.podspec",
+    "!android/.gradle",
+    "!android/build",
+    "!android/gradle",
+    "!android/gradlew",
+    "!android/gradlew.bat",
+    "!android/local.properties",
+    "!**/__tests__",
+    "!**/.*"
+  ],
+  "scripts": {
+    "test": "jest",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint \"src/**/*.ts\"",
+    "build": "npm run clean && tsc && rollup -c rollup.config.mjs",
+    "clean": "rimraf dist"
+  },
+  "keywords": [
+    "capacitor",
+    "capacitor-plugin",
+    "ios",
+    "android",
+    "encore",
+    "offers",
+    "sdk",
+    "monetization",
+    "entitlements"
+  ],
+  "capacitor": {
+    "ios": {
+      "src": "ios"
+    },
+    "android": {
+      "src": "android"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EncoreKit/capacitor-sdk.git"
+  },
+  "author": "Encore <support@encorekit.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/EncoreKit/capacitor-sdk/issues"
+  },
+  "homepage": "https://github.com/EncoreKit/capacitor-sdk#readme",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
+  "peerDependencies": {
+    "@capacitor/core": "^6.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/core": "^6.0.0",
+    "@rollup/plugin-node-resolve": "^16.0.0",
+    "@types/jest": "^29.5.0",
+    "eslint": "^8.57.1",
+    "jest": "^29.7.0",
+    "rimraf": "^6.0.0",
+    "rollup": "^4.0.0",
+    "ts-jest": "^29.2.0",
+    "typescript": "~5.5.0"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "roots": [
+      "<rootDir>/src"
+    ],
+    "modulePathIgnorePatterns": [
+      "<rootDir>/example/",
+      "<rootDir>/dist/"
+    ]
+  }
+}

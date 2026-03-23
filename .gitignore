@@ -1,0 +1,53 @@
+# Dependencies
+/node_modules
+example/node_modules/
+
+# Build output
+/dist/
+example/dist/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+.vscode/
+
+# Environment / secrets
+.env
+.env.*
+*.local
+
+# Plugin Android build
+/android/.gradle
+/android/build
+
+# Example app — iOS
+example/ios/App/Pods/
+example/ios/App/build/
+example/ios/App/App.xcworkspace/xcuserdata/
+example/ios/App/App.xcodeproj/xcuserdata/
+example/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/
+example/ios/App/App/public/
+example/ios/App/App/capacitor.config.json
+example/ios/App/output/
+example/ios/.xcode.env.local
+
+# Example app — Android
+example/android/.gradle/
+example/android/.idea/
+example/android/app/build/
+example/android/app/.cxx/
+example/android/local.properties
+example/android/capacitor-cordova-android-plugins/build/
+
+# Lockfiles (example only — plugin lockfile is committed)
+example/package-lock.json
+
+# Logs
+*.log
+npm-debug.log*

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">EncoreCapacitorExample</string>
+    <string name="title_activity_main">EncoreCapacitorExample</string>
+    <string name="package_name">com.encorekit.capacitor.example</string>
+    <string name="custom_url_scheme">com.encorekit.capacitor.example</string>
+</resources>
