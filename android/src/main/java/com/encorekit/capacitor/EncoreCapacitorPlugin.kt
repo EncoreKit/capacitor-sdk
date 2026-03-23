@@ -89,7 +89,7 @@ class EncoreCapacitorPlugin : Plugin() {
 
     @PluginMethod
     fun show(call: PluginCall) {
-        val placementId = call.getString("placementId")
+        val placementId = call.getString("placementId") ?: ""
         val activity = activity
         if (activity == null) {
             call.reject("NO_ACTIVITY", "No current activity available")
@@ -98,7 +98,7 @@ class EncoreCapacitorPlugin : Plugin() {
 
         scope.launch {
             try {
-                val result = Encore.placement(placementId).show(activity)
+                val result = Encore.shared.placement(placementId).show(activity)
                 val obj = JSObject()
                 when (result) {
                     is com.encorekit.encore.features.offers.PresentationResult.Completed -> {

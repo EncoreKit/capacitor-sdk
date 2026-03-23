@@ -33,7 +33,7 @@ android {
     compileSdk project.hasProperty('compileSdkVersion') ? rootProject.ext.compileSdkVersion : 34
 
     defaultConfig {
-        minSdkVersion project.hasProperty('minSdkVersion') ? rootProject.ext.minSdkVersion : 22
+        minSdkVersion project.hasProperty('minSdkVersion') ? rootProject.ext.minSdkVersion : 26
         targetSdkVersion project.hasProperty('targetSdkVersion') ? rootProject.ext.targetSdkVersion : 34
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -59,11 +59,17 @@ dependencies {
     // Capacitor core — host app provides at runtime
     implementation project(':capacitor-android')
 
+    // AppCompatActivity — required by Capacitor Plugin base class.
+    // compileOnly: host app provides at runtime (avoid version conflict).
+    compileOnly "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+
     // Encore native Android SDK — we own this version.
-    // Exclude all transitive Kotlin artifacts to avoid version conflicts
-    // with the host app's Kotlin version.
+    // Exclude kotlin-stdlib to avoid conflicts with the host app's Kotlin version.
+    // Keep kotlin-reflect — Moshi needs it at runtime for JSON parsing.
     implementation("com.encorekit:encore:${encoreAndroidVersion}") {
-        exclude group: 'org.jetbrains.kotlin'
+        exclude module: 'kotlin-stdlib'
+        exclude module: 'kotlin-stdlib-jdk7'
+        exclude module: 'kotlin-stdlib-jdk8'
     }
 
     // Bridge uses coroutines for async calls to native SDK.
