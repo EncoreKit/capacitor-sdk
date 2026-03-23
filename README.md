@@ -92,6 +92,6 @@ interface PlacementResult {
 
 | Platform | Min Version | Native SDK |
 |:---------|:-----------|:-----------|
-| iOS | 14.0 | EncoreKit (CocoaPods) |
-| Android | API 22 | com.encorekit:encore (Maven Central) |
+| iOS | 15.0 | EncoreKit (SPM or CocoaPods) |
+| Android | API 26 | com.encorekit:encore (Maven Central) |
 | Web | N/A | Noop fallback with warnings |

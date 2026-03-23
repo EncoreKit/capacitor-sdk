@@ -99,4 +99,4 @@ Android: notifyListeners("onPurchaseRequest", JSObject().apply { ... })
 1. **Single-object parameters**: Capacitor's fundamental constraint — all method args wrapped in one JSON object
 2. **No framework bindings**: Unlike RN (hooks/provider), Capacitor apps are plain web apps — singleton export suffices
 3. **Web fallback as noop**: `web.ts` warns and returns safe fallbacks; the real web SDK is a separate product
-4. **Capacitor 6 target**: Current stable, iOS 14+, Android minSdk 22
+4. **Capacitor 6+ target**: Current stable, iOS 15+, Android minSdk 26
