@@ -3,7 +3,7 @@
   "version": "0.1.2",
   "sdkVersions": {
     "ios": {
-      "EncoreKit": "1.4.39"
+      "EncoreKit": "1.4.40"
     },
     "android": {
       "com.encorekit:encore": "1.4.45"
