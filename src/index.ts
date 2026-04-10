@@ -2,7 +2,7 @@
 // Bridge-only layer — delegates to native SDKs on each platform.
 // iOS: encore-swift-sdk | Android: encore-android-sdk
 
-import { registerPlugin } from '@capacitor/core';
+import { registerPlugin, type PluginListenerHandle } from '@capacitor/core';
 
 import type {
   EncorePlugin,
@@ -23,6 +23,20 @@ const EncoreCapacitorPlugin = registerPlugin<EncorePlugin>(
     web: () => import('./web').then((m) => new m.EncorePluginWeb()),
   },
 );
+
+// Setter semantics: each on*() call replaces the previous handler instead of
+// appending. Matches Swift / Android / Flutter parity. Without this, repeat
+// registrations (e.g. hot reload, re-renders without cleanup) would accumulate
+// listeners and cause N duplicate purchase attempts per event.
+let currentPurchaseRequestHandle: Promise<PluginListenerHandle> | null = null;
+let currentPurchaseCompleteHandle: Promise<PluginListenerHandle> | null = null;
+let currentPassthroughHandle: Promise<PluginListenerHandle> | null = null;
+
+function removeHandle(handle: Promise<PluginListenerHandle> | null): void {
+  handle?.then((h) => h.remove()).catch(() => {
+    // Swallow — listener cleanup failures must never crash host apps.
+  });
+}
 
 async function safeBridgeCall<T>(
   method: string,
@@ -106,23 +120,38 @@ const Encore: EncoreSDK = {
     ),
 
   onPurchaseRequest: (handler) => {
+    removeHandle(currentPurchaseRequestHandle);
     const handle = EncoreCapacitorPlugin.addListener('onPurchaseRequest', handler);
+    currentPurchaseRequestHandle = handle;
     return () => {
-      handle.then((h) => h.remove());
+      removeHandle(handle);
+      if (currentPurchaseRequestHandle === handle) {
+        currentPurchaseRequestHandle = null;
+      }
     };
   },
 
   onPurchaseComplete: (handler) => {
+    removeHandle(currentPurchaseCompleteHandle);
     const handle = EncoreCapacitorPlugin.addListener('onPurchaseComplete', handler);
+    currentPurchaseCompleteHandle = handle;
     return () => {
-      handle.then((h) => h.remove());
+      removeHandle(handle);
+      if (currentPurchaseCompleteHandle === handle) {
+        currentPurchaseCompleteHandle = null;
+      }
     };
   },
 
   onPassthrough: (handler) => {
+    removeHandle(currentPassthroughHandle);
     const handle = EncoreCapacitorPlugin.addListener('onPassthrough', handler);
+    currentPassthroughHandle = handle;
     return () => {
-      handle.then((h) => h.remove());
+      removeHandle(handle);
+      if (currentPassthroughHandle === handle) {
+        currentPassthroughHandle = null;
+      }
     };
   },
 };

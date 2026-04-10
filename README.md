@@ -52,6 +52,126 @@ if (result.status === 'granted') {
 await Encore.reset();
 ```
 
+## Registering Callbacks (Setter Semantics)
+
+> **Register once, at app startup.** `onPurchaseRequest`, `onPurchaseComplete`, and `onPassthrough` use **setter semantics** — each call **replaces** the previous handler (matching the iOS, Android, and Flutter SDKs). They are global singleton handlers, not multi-listener event subscriptions.
+>
+> Register them **once per app lifetime** in your app bootstrap, **not** inside button click handlers, route guards, or per-component lifecycle hooks. Re-registering with stale closures during dev hot reloads is safe (the latest registration always wins) but registering on every route change or button press is an anti-pattern.
+
+#### Vanilla JS / app entry point
+
+```typescript
+// main.ts — runs once when the app boots
+import Encore from '@encorekit/capacitor';
+
+await Encore.configure('your-api-key');
+await Encore.registerCallbacks();
+
+Encore.onPurchaseRequest(async ({ productId }) => {
+  try {
+    await Billing.purchase(productId);
+    await Encore.completePurchaseRequest(true);
+  } catch {
+    await Encore.completePurchaseRequest(false);
+  }
+});
+
+Encore.onPurchaseComplete(({ productId, transactionId }) => {
+  // Optional: sync with backends that don't auto-detect StoreKit/Play Billing
+});
+
+Encore.onPassthrough(({ placementId }) => {
+  // User dismissed without purchasing — resume your original flow
+});
+```
+
+#### Vue 3
+
+```vue
+<!-- App.vue -->
+<script setup lang="ts">
+import { onMounted, onUnmounted } from 'vue';
+import Encore from '@encorekit/capacitor';
+
+let unsubPurchase: () => void;
+let unsubComplete: () => void;
+let unsubPassthrough: () => void;
+
+onMounted(() => {
+  unsubPurchase = Encore.onPurchaseRequest(handlePurchase);
+  unsubComplete = Encore.onPurchaseComplete(handleComplete);
+  unsubPassthrough = Encore.onPassthrough(handlePassthrough);
+});
+
+onUnmounted(() => {
+  unsubPurchase?.();
+  unsubComplete?.();
+  unsubPassthrough?.();
+});
+</script>
+```
+
+#### Angular
+
+```typescript
+// app.component.ts
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import Encore from '@encorekit/capacitor';
+
+@Component({ selector: 'app-root', template: '<router-outlet />' })
+export class AppComponent implements OnInit, OnDestroy {
+  private unsubscribers: Array<() => void> = [];
+
+  ngOnInit() {
+    this.unsubscribers.push(
+      Encore.onPurchaseRequest(this.handlePurchase),
+      Encore.onPurchaseComplete(this.handleComplete),
+      Encore.onPassthrough(this.handlePassthrough),
+    );
+  }
+
+  ngOnDestroy() {
+    this.unsubscribers.forEach((u) => u());
+  }
+}
+```
+
+#### React (via Ionic React)
+
+```tsx
+// App.tsx
+import { useEffect } from 'react';
+import Encore from '@encorekit/capacitor';
+
+export default function App() {
+  useEffect(() => {
+    const unsubPurchase = Encore.onPurchaseRequest(handlePurchase);
+    const unsubComplete = Encore.onPurchaseComplete(handleComplete);
+    const unsubPassthrough = Encore.onPassthrough(handlePassthrough);
+    return () => {
+      unsubPurchase();
+      unsubComplete();
+      unsubPassthrough();
+    };
+  }, []);
+
+  return <YourApp />;
+}
+```
+
+#### Anti-pattern
+
+```typescript
+// DO NOT DO THIS
+button.addEventListener('click', () => {
+  // ❌ Re-registers on every click. Closures may capture stale state.
+  Encore.onPurchaseRequest(handlePurchase);
+  Encore.placement('paywall').show();
+});
+```
+
+If you need per-screen behavior, store the screen state in a module-level variable or signal and read it from inside the root-level handler — don't re-register the handler itself.
+
 ## API Reference
 
 | Method | Description |
