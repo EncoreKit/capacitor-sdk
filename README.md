@@ -52,6 +52,33 @@ if (result.status === 'granted') {
 await Encore.reset();
 ```
 
+## Registering Callbacks (Setter Semantics)
+
+> **Setter semantics.** `onPurchaseRequest`, `onPurchaseComplete`, and `onPassthrough` each **replace** the previous handler when called again (matching iOS, Android, and Flutter). They are global singleton handlers, not multi-listener subscriptions. No manual cleanup is required — re-registration is safe and idempotent.
+
+Register once, right after `configure` / `registerCallbacks`:
+
+```typescript
+Encore.onPurchaseRequest(async ({ productId }) => {
+  try {
+    await Billing.purchase(productId);
+    await Encore.completePurchaseRequest(true);
+  } catch {
+    await Encore.completePurchaseRequest(false);
+  }
+});
+
+Encore.onPurchaseComplete(({ productId, transactionId }) => {
+  // Optional: sync with backends that don't auto-detect StoreKit/Play Billing
+});
+
+Encore.onPassthrough(({ placementId }) => {
+  // User dismissed without purchasing — resume your original flow
+});
+```
+
+This works the same way regardless of framework (Angular, Vue, React, vanilla JS). Call them at app startup — no lifecycle hooks needed.
+
 ## API Reference
 
 | Method | Description |

@@ -1,7 +1,35 @@
 import type { PlacementResult } from '../definitions';
 
-const mockRemove = jest.fn();
-const mockAddListener = jest.fn().mockResolvedValue({ remove: mockRemove });
+type Listener = (...args: unknown[]) => void;
+
+// Faithful event-emitter mock: tracks the *active* set of listeners per event
+// so tests can verify behavior (which handler actually fires) instead of
+// brittle structural assertions on call counts.
+const activeHandlersByEvent = new Map<string, Set<Listener>>();
+
+const mockAddListener = jest.fn((event: string, handler: Listener) => {
+  let set = activeHandlersByEvent.get(event);
+  if (!set) {
+    set = new Set();
+    activeHandlersByEvent.set(event, set);
+  }
+  set.add(handler);
+  return Promise.resolve({
+    remove: () => {
+      activeHandlersByEvent.get(event)?.delete(handler);
+      return Promise.resolve();
+    },
+  });
+});
+
+function emit(event: string, payload: unknown): void {
+  const set = activeHandlersByEvent.get(event);
+  if (!set) return;
+  for (const h of [...set]) h(payload);
+}
+
+// Flush microtasks so that .then(h => h.remove()) chains in the SDK resolve.
+const flush = () => new Promise<void>((r) => setTimeout(r, 0));
 
 const mockPlugin = {
   configure: jest.fn().mockResolvedValue({ success: true }),
@@ -23,8 +51,16 @@ jest.mock('@capacitor/core', () => ({
 
 import Encore from '../index';
 
-beforeEach(() => {
+beforeEach(async () => {
   jest.clearAllMocks();
+  // Clear leftover handlers from previous tests. The SDK module retains
+  // current-subscription state between tests; the next on*() call will safely
+  // no-op when it tries to remove a subscription whose handler is no longer
+  // tracked here.
+  activeHandlersByEvent.clear();
+  // Allow any leftover .then(h => h.remove()) microtasks from the previous
+  // test to drain before the next test starts.
+  await flush();
 });
 
 // ---------------------------------------------------------------------------
@@ -188,12 +224,13 @@ describe('placements.setClaimEnabled', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Event subscriptions
+// Event subscriptions — setter semantics (parity with Swift / Android / Flutter)
 // ---------------------------------------------------------------------------
 describe('onPurchaseRequest', () => {
-  it('subscribes to the onPurchaseRequest event via addListener', () => {
+  it('subscribes to the onPurchaseRequest event via addListener', async () => {
     const handler = jest.fn();
     Encore.onPurchaseRequest(handler);
+    await flush();
 
     expect(mockAddListener).toHaveBeenCalledWith('onPurchaseRequest', handler);
   });
@@ -201,19 +238,37 @@ describe('onPurchaseRequest', () => {
   it('returns an unsubscribe function that removes the listener', async () => {
     const handler = jest.fn();
     const unsubscribe = Encore.onPurchaseRequest(handler);
+    await flush();
 
-    expect(mockRemove).not.toHaveBeenCalled();
+    emit('onPurchaseRequest', { productId: 'sku_1' });
+    expect(handler).toHaveBeenCalledTimes(1);
+
     unsubscribe();
-    // Allow the promise chain to resolve
-    await new Promise((r) => setTimeout(r, 0));
-    expect(mockRemove).toHaveBeenCalledTimes(1);
+    await flush();
+    emit('onPurchaseRequest', { productId: 'sku_2' });
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it('replaces the previous handler (setter semantics)', async () => {
+    const first = jest.fn();
+    const second = jest.fn();
+
+    Encore.onPurchaseRequest(first);
+    Encore.onPurchaseRequest(second);
+    await flush();
+    emit('onPurchaseRequest', { productId: 'sku_1', placementId: 'p1' });
+
+    expect(first).not.toHaveBeenCalled();
+    expect(second).toHaveBeenCalledTimes(1);
+    expect(second).toHaveBeenCalledWith({ productId: 'sku_1', placementId: 'p1' });
   });
 });
 
 describe('onPurchaseComplete', () => {
-  it('subscribes to the onPurchaseComplete event via addListener', () => {
+  it('subscribes to the onPurchaseComplete event via addListener', async () => {
     const handler = jest.fn();
     Encore.onPurchaseComplete(handler);
+    await flush();
 
     expect(mockAddListener).toHaveBeenCalledWith('onPurchaseComplete', handler);
   });
@@ -221,18 +276,37 @@ describe('onPurchaseComplete', () => {
   it('returns an unsubscribe function that removes the listener', async () => {
     const handler = jest.fn();
     const unsubscribe = Encore.onPurchaseComplete(handler);
+    await flush();
 
-    expect(mockRemove).not.toHaveBeenCalled();
+    emit('onPurchaseComplete', { productId: 'sku_1' });
+    expect(handler).toHaveBeenCalledTimes(1);
+
     unsubscribe();
-    await new Promise((r) => setTimeout(r, 0));
-    expect(mockRemove).toHaveBeenCalledTimes(1);
+    await flush();
+    emit('onPurchaseComplete', { productId: 'sku_2' });
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it('replaces the previous handler (setter semantics)', async () => {
+    const first = jest.fn();
+    const second = jest.fn();
+
+    Encore.onPurchaseComplete(first);
+    Encore.onPurchaseComplete(second);
+    await flush();
+    emit('onPurchaseComplete', { productId: 'sku_1', transactionId: 'tx_1' });
+
+    expect(first).not.toHaveBeenCalled();
+    expect(second).toHaveBeenCalledTimes(1);
+    expect(second).toHaveBeenCalledWith({ productId: 'sku_1', transactionId: 'tx_1' });
   });
 });
 
 describe('onPassthrough', () => {
-  it('subscribes to the onPassthrough event via addListener', () => {
+  it('subscribes to the onPassthrough event via addListener', async () => {
     const handler = jest.fn();
     Encore.onPassthrough(handler);
+    await flush();
 
     expect(mockAddListener).toHaveBeenCalledWith('onPassthrough', handler);
   });
@@ -240,11 +314,29 @@ describe('onPassthrough', () => {
   it('returns an unsubscribe function that removes the listener', async () => {
     const handler = jest.fn();
     const unsubscribe = Encore.onPassthrough(handler);
+    await flush();
 
-    expect(mockRemove).not.toHaveBeenCalled();
+    emit('onPassthrough', { placementId: 'p1' });
+    expect(handler).toHaveBeenCalledTimes(1);
+
     unsubscribe();
-    await new Promise((r) => setTimeout(r, 0));
-    expect(mockRemove).toHaveBeenCalledTimes(1);
+    await flush();
+    emit('onPassthrough', { placementId: 'p2' });
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it('replaces the previous handler (setter semantics)', async () => {
+    const first = jest.fn();
+    const second = jest.fn();
+
+    Encore.onPassthrough(first);
+    Encore.onPassthrough(second);
+    await flush();
+    emit('onPassthrough', { placementId: 'p1' });
+
+    expect(first).not.toHaveBeenCalled();
+    expect(second).toHaveBeenCalledTimes(1);
+    expect(second).toHaveBeenCalledWith({ placementId: 'p1' });
   });
 });
 
