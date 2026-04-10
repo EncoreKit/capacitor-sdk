@@ -54,19 +54,11 @@ await Encore.reset();
 
 ## Registering Callbacks (Setter Semantics)
 
-> **Register once, at app startup.** `onPurchaseRequest`, `onPurchaseComplete`, and `onPassthrough` use **setter semantics** — each call **replaces** the previous handler (matching the iOS, Android, and Flutter SDKs). They are global singleton handlers, not multi-listener event subscriptions.
->
-> Register them **once per app lifetime** at your app's root — either in a bootstrap script or in the **root component's** lifecycle hook (`App.vue onMounted`, `AppComponent.ngOnInit`, `App.tsx useEffect`). Do **not** register inside button click handlers, route guards, or frequently-mounted child components. Re-registering with stale closures during dev hot reloads is safe (the latest registration always wins), but registering on every route change or button press is an anti-pattern.
+> **Setter semantics.** `onPurchaseRequest`, `onPurchaseComplete`, and `onPassthrough` each **replace** the previous handler when called again (matching iOS, Android, and Flutter). They are global singleton handlers, not multi-listener subscriptions. No manual cleanup is required — re-registration is safe and idempotent.
 
-#### Vanilla JS / app entry point
+Register once, right after `configure` / `registerCallbacks`:
 
 ```typescript
-// main.ts — runs once when the app boots
-import Encore from '@encorekit/capacitor';
-
-await Encore.configure('your-api-key');
-await Encore.registerCallbacks();
-
 Encore.onPurchaseRequest(async ({ productId }) => {
   try {
     await Billing.purchase(productId);
@@ -85,58 +77,7 @@ Encore.onPassthrough(({ placementId }) => {
 });
 ```
 
-#### Vue 3
-
-```vue
-<!-- App.vue -->
-<script setup lang="ts">
-import { onMounted } from 'vue';
-import Encore from '@encorekit/capacitor';
-
-onMounted(() => {
-  Encore.onPurchaseRequest(handlePurchase);
-  Encore.onPurchaseComplete(handleComplete);
-  Encore.onPassthrough(handlePassthrough);
-});
-</script>
-```
-
-#### Angular
-
-```typescript
-// app.component.ts
-import { Component, OnInit } from '@angular/core';
-import Encore from '@encorekit/capacitor';
-
-@Component({ selector: 'app-root', template: '<router-outlet></router-outlet>' })
-export class AppComponent implements OnInit {
-  ngOnInit() {
-    Encore.onPurchaseRequest(this.handlePurchase);
-    Encore.onPurchaseComplete(this.handleComplete);
-    Encore.onPassthrough(this.handlePassthrough);
-  }
-}
-```
-
-#### React (via Ionic React)
-
-```tsx
-// App.tsx
-import { useEffect } from 'react';
-import Encore from '@encorekit/capacitor';
-
-export default function App() {
-  useEffect(() => {
-    Encore.onPurchaseRequest(handlePurchase);
-    Encore.onPurchaseComplete(handleComplete);
-    Encore.onPassthrough(handlePassthrough);
-  }, []);
-
-  return <YourApp />;
-}
-```
-
-No manual cleanup required in any framework — setter semantics means re-registration automatically replaces the previous handler.
+This works the same way regardless of framework (Angular, Vue, React, vanilla JS). Call them at app startup — no lifecycle hooks needed.
 
 ## API Reference
 
