@@ -90,23 +90,13 @@ Encore.onPassthrough(({ placementId }) => {
 ```vue
 <!-- App.vue -->
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue';
+import { onMounted } from 'vue';
 import Encore from '@encorekit/capacitor';
 
-let unsubPurchase: (() => void) | undefined;
-let unsubComplete: (() => void) | undefined;
-let unsubPassthrough: (() => void) | undefined;
-
 onMounted(() => {
-  unsubPurchase = Encore.onPurchaseRequest(handlePurchase);
-  unsubComplete = Encore.onPurchaseComplete(handleComplete);
-  unsubPassthrough = Encore.onPassthrough(handlePassthrough);
-});
-
-onUnmounted(() => {
-  unsubPurchase?.();
-  unsubComplete?.();
-  unsubPassthrough?.();
+  Encore.onPurchaseRequest(handlePurchase);
+  Encore.onPurchaseComplete(handleComplete);
+  Encore.onPassthrough(handlePassthrough);
 });
 </script>
 ```
@@ -115,23 +105,15 @@ onUnmounted(() => {
 
 ```typescript
 // app.component.ts
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import Encore from '@encorekit/capacitor';
 
 @Component({ selector: 'app-root', template: '<router-outlet></router-outlet>' })
-export class AppComponent implements OnInit, OnDestroy {
-  private unsubscribers: Array<() => void> = [];
-
+export class AppComponent implements OnInit {
   ngOnInit() {
-    this.unsubscribers.push(
-      Encore.onPurchaseRequest(this.handlePurchase),
-      Encore.onPurchaseComplete(this.handleComplete),
-      Encore.onPassthrough(this.handlePassthrough),
-    );
-  }
-
-  ngOnDestroy() {
-    this.unsubscribers.forEach((u) => u());
+    Encore.onPurchaseRequest(this.handlePurchase);
+    Encore.onPurchaseComplete(this.handleComplete);
+    Encore.onPassthrough(this.handlePassthrough);
   }
 }
 ```
@@ -145,32 +127,16 @@ import Encore from '@encorekit/capacitor';
 
 export default function App() {
   useEffect(() => {
-    const unsubPurchase = Encore.onPurchaseRequest(handlePurchase);
-    const unsubComplete = Encore.onPurchaseComplete(handleComplete);
-    const unsubPassthrough = Encore.onPassthrough(handlePassthrough);
-    return () => {
-      unsubPurchase();
-      unsubComplete();
-      unsubPassthrough();
-    };
+    Encore.onPurchaseRequest(handlePurchase);
+    Encore.onPurchaseComplete(handleComplete);
+    Encore.onPassthrough(handlePassthrough);
   }, []);
 
   return <YourApp />;
 }
 ```
 
-#### Anti-pattern
-
-```typescript
-// DO NOT DO THIS
-button.addEventListener('click', () => {
-  // ❌ Re-registers on every click. Closures may capture stale state.
-  Encore.onPurchaseRequest(handlePurchase);
-  Encore.placement('paywall').show();
-});
-```
-
-If you need per-screen behavior, store the screen state in a module-level variable or signal and read it from inside the root-level handler — don't re-register the handler itself.
+No manual cleanup required in any framework — setter semantics means re-registration automatically replaces the previous handler.
 
 ## API Reference
 
