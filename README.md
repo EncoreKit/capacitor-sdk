@@ -56,7 +56,7 @@ await Encore.reset();
 
 > **Register once, at app startup.** `onPurchaseRequest`, `onPurchaseComplete`, and `onPassthrough` use **setter semantics** — each call **replaces** the previous handler (matching the iOS, Android, and Flutter SDKs). They are global singleton handlers, not multi-listener event subscriptions.
 >
-> Register them **once per app lifetime** in your app bootstrap, **not** inside button click handlers, route guards, or per-component lifecycle hooks. Re-registering with stale closures during dev hot reloads is safe (the latest registration always wins) but registering on every route change or button press is an anti-pattern.
+> Register them **once per app lifetime** at your app's root — either in a bootstrap script or in the **root component's** lifecycle hook (`App.vue onMounted`, `AppComponent.ngOnInit`, `App.tsx useEffect`). Do **not** register inside button click handlers, route guards, or frequently-mounted child components. Re-registering with stale closures during dev hot reloads is safe (the latest registration always wins), but registering on every route change or button press is an anti-pattern.
 
 #### Vanilla JS / app entry point
 
@@ -93,9 +93,9 @@ Encore.onPassthrough(({ placementId }) => {
 import { onMounted, onUnmounted } from 'vue';
 import Encore from '@encorekit/capacitor';
 
-let unsubPurchase: () => void;
-let unsubComplete: () => void;
-let unsubPassthrough: () => void;
+let unsubPurchase: (() => void) | undefined;
+let unsubComplete: (() => void) | undefined;
+let unsubPassthrough: (() => void) | undefined;
 
 onMounted(() => {
   unsubPurchase = Encore.onPurchaseRequest(handlePurchase);
@@ -118,7 +118,7 @@ onUnmounted(() => {
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import Encore from '@encorekit/capacitor';
 
-@Component({ selector: 'app-root', template: '<router-outlet />' })
+@Component({ selector: 'app-root', template: '<router-outlet></router-outlet>' })
 export class AppComponent implements OnInit, OnDestroy {
   private unsubscribers: Array<() => void> = [];
 
