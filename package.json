@@ -6,7 +6,7 @@
       "EncoreKit": "1.4.46"
     },
     "android": {
-      "com.encorekit:encore": "1.4.48"
+      "com.encorekit:encore": "1.4.49"
     }
   },
   "description": "Encore Capacitor bridge — thin native plugin layer delegating to encore-swift-sdk (iOS) and encore-android-sdk (Android)",
